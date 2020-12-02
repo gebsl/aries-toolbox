@@ -34,12 +34,30 @@
             icon="el-icon-plus"
             @click="recieve_invitation">Add</el-button>
         </el-input>
+
+        <el-button
+          class="ml-2"
+          type="primary"
+          icon="el-icon-camera"
+          @click="isQrDialogVisible = true"
+        >Scan QR-Code</el-button>
       </el-form-item>
     </el-form>
+
+    <el-dialog
+      title="Scan QR-Code"
+      :visible.sync="isQrDialogVisible"
+    >
+      <qrcode-stream
+        v-if="isQrDialogVisible"
+        @decode="onQrScan"
+      ></qrcode-stream>
+    </el-dialog>
   </el-row>
 </template>
 
 <script>
+import { QrcodeStream } from 'vue-qrcode-reader'
 import ConnectionList from './ConnectionList.vue';
 import share from '@/share.ts';
 import message_bus from '@/message_bus.ts';
@@ -103,7 +121,8 @@ export const shared = {
 export default {
   name: 'connections',
   components: {
-    ConnectionList
+    ConnectionList,
+    QrcodeStream,
   },
   mixins: [
     message_bus(),
@@ -115,6 +134,7 @@ export default {
   data: function() {
     return {
       'invitation': '',
+      'isQrDialogVisible': false,
     }
   },
   created: async function() {
@@ -165,6 +185,18 @@ export default {
         return this.fetch_connections();
       }, 4000);
     },
+    onQrScan: function (decodedString) {
+      try {
+        // only if string can be parsed as url, we will accept it
+        new URL(decodedString);
+      } catch {
+        return;
+      }
+
+      this.isQrDialogVisible = false;
+      this.invitation = decodedString;
+      this.recieve_invitation();
+    }
   },
 }
 </script>
